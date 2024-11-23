@@ -63,6 +63,18 @@ const Hero = () => {
                <video
                 ref={nextVideoRef}// References the next video element
                 src={getVideoSrc(currentIndex)}// Gets the source of the current video based on index
+                loop// Ensures the video plays continuously
+                muted// Mutes the video
+                id="next-video"// Assigns an ID for potential manipulation
+                className="absolute-center invinsible absolute z-20 size-64 object-cover object-center"
+                onLoadedData={handleVideoLoad}// Triggers when the video data is fully loaded
+               />
+
+               {/* Dynamically sets the video source for the next video.
+               If the current video is the last one, it loops back to the first video (index 1).
+               Otherwise, it increments the current index by 1 to play the next video in sequence. */}
+               <video
+               src={getVideoSrc(currentIndex === totalVideos - 1 ? 1 : currentIndex + 1)}
                /> 
             </div>
         </div>
