@@ -1,89 +1,189 @@
-import { useRef, useState } from "react";
+// Import necessary dependencies and components
+import gsap from "gsap"; // GSAP animation library
+import { useGSAP } from "@gsap/react"; // React hook for integrating GSAP
+import { ScrollTrigger } from "gsap/all"; // ScrollTrigger plugin for scroll-based animations
+import { TiLocationArrow } from "react-icons/ti"; // Icon for the button
+import { useEffect, useRef, useState } from "react"; // React hooks
+
+import Button from "./Button"; // Custom Button component
+import VideoPreview from "./VideoPreview"; // Custom VideoPreview component
+
+// Register the ScrollTrigger plugin for use in animations
+gsap.registerPlugin(ScrollTrigger);
 
 const Hero = () => {
-    // State to track the current video index
-    const [currentIndex, setCurrentIndex] = useState(1);
-    // State to track whether the mini-video has been clicked
-    const [hasClicked, setHasClicked] = useState(false);
-    // State to track if the video or other elements are still loading
-    const [isLoading, setIsLoading] = useState(true);
-    // State to count the number of videos that have fully loaded
-    const [loadedVideos, setLoadedVideos] = useState(0);
+  // State variables for controlling video index, load status, and click handling
+  const [currentIndex, setCurrentIndex] = useState(1); // Tracks the current video index
+  const [hasClicked, setHasClicked] = useState(false); // Flags whether the mini video has been clicked
 
-    const totalVideos = 3; // Total number of videos available in the cycle
-    const nextVideoRef = useRef(null);// Reference to the next video element for manipulation
+  // Loading state to manage video loading progress
+  const [loading, setLoading] = useState(true); // Controls loading state for videos
+  const [loadedVideos, setLoadedVideos] = useState(0); // Keeps track of how many videos have loaded
 
-     // Function to increment the count of loaded videos when a video finishes loading
-    const handleVideoLoad = () => {
-      setLoadedVideos((prev) => prev + 1);
+  const totalVideos = 4; // Total number of videos to be displayed
+  const nextVdRef = useRef(null); // Reference for the next video element
+
+  // Handles when a video is loaded, incrementing the loaded video counter
+  const handleVideoLoad = () => {
+    setLoadedVideos((prev) => prev + 1);
+  };
+
+  // Effect hook that sets loading to false once all videos are loaded
+  useEffect(() => {
+    if (loadedVideos === totalVideos - 1) {
+      setLoading(false); // Set loading to false once all videos are loaded
     }
-     // Modulo operator to determine the next video index in a circular manner
-    // This ensures that the video index loops back to 1 after reaching the last video
-    //modulo operator functionality in brief
-    //0 % 4 = 0 + 1 = 1
-    //1 % 4 = 1 + 1 = 2
-    //2 % 4 = 2 + 1 = 3
-    //3 % 4 = 3 + 1 = 4
-    //4 % 4 = 0 + 1 = 1
-    const upcomingVideoIndex = (currentIndex % totalVideos) + 1;
+  }, [loadedVideos]);
 
-    //handle  the mini video that pops up on hover and its state when clicked to cover the whole screen
-    const handleMiniVideoClick =() =>{
-      setHasClicked(true);// Marks that the video has been clicked
+  // Handles when the mini-video is clicked to update the video index
+  const handleMiniVdClick = () => {
+    setHasClicked(true); // Set hasClicked to true when mini-video is clicked
 
-      // setCurrentIndex((prevIndex) => prevIndex + 1); Moves to the next video but tat the end one runs out of videos
-      setCurrentIndex(upcomingVideoIndex); // Updates the current video index and ensure ther will always be a video to play
+    // Cycle through the video index
+    setCurrentIndex((prevIndex) => (prevIndex % totalVideos) + 1);
+  };
+
+  // GSAP animation when a mini video is clicked to transition to the full video
+  useGSAP(() => {
+    if (hasClicked) {
+      gsap.set("#next-video", { visibility: "visible" }); // Make the next video visible
+      gsap.to("#next-video", {
+        transformOrigin: "center center", // Set the animation origin
+        scale: 1, // Scale the next video to full size
+        width: "100%", // Ensure the video fills the container
+        height: "100%",
+        duration: 1, // Duration of the animation
+        ease: "power1.inOut", // Easing function for smooth transition
+        onStart: () => nextVdRef.current.play(), // Play the next video when the animation starts
+      });
+      // Animate the current video to shrink out
+      gsap.from("#current-video", {
+        transformOrigin: "center center",
+        scale: 0,
+        duration: 1.5,
+        ease: "power1.inOut",
+      });
     }
-    // Dynamically generates the video source path based on the index
-    const getVideoSrc = (index) => `videos/hero-${index}.mp4`;
+  }, {
+    dependencies: [currentIndex], // Re-run animation when currentIndex changes
+    revertOnUpdate: true, // Revert the animations when dependencies change
+  });
 
+  // GSAP animation for the video frame's shape and border radius on scroll
+  useGSAP(() => {
+    gsap.set("#video-frame", {
+      clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)", // Initial clip-path for the frame
+      borderRadius: "0% 0% 40% 10%", // Initial border radius for the frame
+    });
+    // Animation on scroll that animates clip-path and border-radius of the video frame
+    gsap.from("#video-frame", {
+      clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)", // Animated clip-path to reveal the frame shape
+      borderRadius: "0% 0% 0% 0%", // Border radius animation
+      ease: "power1.inOut", // Easing function
+      scrollTrigger: {
+        trigger: "#video-frame", // Element to trigger the animation on scroll
+        start: "center center", // Start the animation when the element reaches the center
+        end: "bottom center", // End the animation when the bottom reaches the center
+        scrub: true, // Smooth scrolling effect with the animation
+      },
+    });
+  });
+
+  // Helper function to get video source URL based on the index
+  const getVideoSrc = (index) => `videos/hero-${index}.mp4`;
 
   return (
     <div className="relative h-dvh w-screen overflow-x-hidden">
-         {/* Container for the video frame */}
-        <div id="video-frame" className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75s">
-            <div>
-              {/* Mask-clip path that contains the hoverable video element */}
-               <div className="mask-clip-path absolute-center absolute z-50 size-64
-               cursor-pointer overflow-hidden rounded-lg">
-                <div onClick={handleMiniVideoClick} className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100">
-                  {/* Next video preview */}
-                    <video
-                     ref={nextVideoRef}// References the next video elemen
-                    //  src={getVideoSrc(currentIndex + 1)} Gets the source of the next video in the sequence
-                    src={getVideoSrc(upcomingVideoIndex)} //Get the source through the modulo operator and ensure clip video is always different from the main video
-                     loop// Ensures the video plays continuously
-                     muted// Mutes the video
-                     id="current-video"// Assigns an ID for potential manipulation
-                     className="size-64 origin-center scale-150 object-cover object-center"
-                     onLoadedData={handleVideoLoad}// Triggers when the video data is fully loaded
-                    />
-                </div>
-               </div>
-               <video
-                ref={nextVideoRef}// References the next video element
-                src={getVideoSrc(currentIndex)}// Gets the source of the current video based on index
-                loop// Ensures the video plays continuously
-                muted// Mutes the video
-                id="next-video"// Assigns an ID for potential manipulation
-                className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
-                onLoadedData={handleVideoLoad}// Triggers when the video data is fully loaded
-               />
-
-               {/* Dynamically sets the video source for the next video.
-               If the current video is the last one, it loops back to the first video (index 1).
-               Otherwise, it increments the current index by 1 to play the next video in sequence. */}
-               <video
-               src={getVideoSrc(currentIndex === totalVideos - 1 ? 1 : currentIndex + 1)}
-               autoPlay// Automatically plays the video
-               loop// Ensures the video plays continuously
-               muted// Mutes the video
-               className="absolute left-0 top-0 size-full object-cover object-center"
-               /> 
-            </div>
+      {/* Loading animation, displayed until all videos are loaded */}
+      {loading && (
+        <div className="flex-center absolute z-[100] h-dvh w-screen overflow-hidden bg-violet-50">
+          {/* Loading animation (three dots spinning effect) */}
+          <div className="three-body">
+            <div className="three-body__dot"></div>
+            <div className="three-body__dot"></div>
+            <div className="three-body__dot"></div>
+          </div>
         </div>
-    </div>
-  )
-}
+      )}
 
-export default Hero
+      {/* Video frame container */}
+      <div id="video-frame" className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75">
+        <div>
+          {/* Video preview with a clickable mini-video */}
+          <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
+            <VideoPreview>
+              <div
+                onClick={handleMiniVdClick} // Handle mini-video click
+                className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
+              >
+                {/* Mini video preview */}
+                <video
+                  ref={nextVdRef}
+                  src={getVideoSrc((currentIndex % totalVideos) + 1)} // Get next video based on index
+                  loop
+                  muted
+                  id="current-video"
+                  className="size-64 origin-center scale-150 object-cover object-center"
+                  onLoadedData={handleVideoLoad} // Track video loading progress
+                />
+              </div>
+            </VideoPreview>
+          </div>
+
+          {/* The main full-screen video */}
+          <video
+            ref={nextVdRef}
+            src={getVideoSrc(currentIndex)} // Get the current video source
+            loop
+            muted
+            id="next-video"
+            className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
+            onLoadedData={handleVideoLoad} // Track video loading progress
+          />
+          <video
+            src={getVideoSrc(currentIndex === totalVideos - 1 ? 1 : currentIndex)} // Loop back to the first video
+            autoPlay
+            loop
+            muted
+            className="absolute left-0 top-0 size-full object-cover object-center"
+            onLoadedData={handleVideoLoad} // Track video loading progress
+          />
+        </div>
+
+        {/* Main heading (GAMING) */}
+        <h1 className="special-font hero-heading absolute bottom-5 right-5 z-40 text-blue-75">
+          G<b>A</b>MING
+        </h1>
+
+        {/* Overlay content with call-to-action */}
+        <div className="absolute left-0 top-0 z-40 size-full">
+          <div className="mt-24 px-5 sm:px-10">
+            <h1 className="special-font hero-heading text-blue-100">
+              redefi<b>n</b>e
+            </h1>
+
+            {/* Short description */}
+            <p className="mb-5 max-w-64 font-robert-regular text-blue-100">
+              Enter the Metagame Layer <br /> Unleash the Play Economy
+            </p>
+
+            {/* Button to watch trailer */}
+            <Button
+              id="watch-trailer"
+              title="Watch trailer"
+              leftIcon={<TiLocationArrow />}
+              containerClass="bg-yellow-300 flex-center gap-1"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Duplicate of the GAMING heading */}
+      <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
+        G<b>A</b>MING
+      </h1>
+    </div>
+  );
+};
+
+export default Hero;
