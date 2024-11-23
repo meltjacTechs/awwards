@@ -66,7 +66,7 @@ const Hero = () => {
                 loop// Ensures the video plays continuously
                 muted// Mutes the video
                 id="next-video"// Assigns an ID for potential manipulation
-                className="absolute-center invinsible absolute z-20 size-64 object-cover object-center"
+                className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
                 onLoadedData={handleVideoLoad}// Triggers when the video data is fully loaded
                />
 
@@ -75,6 +75,10 @@ const Hero = () => {
                Otherwise, it increments the current index by 1 to play the next video in sequence. */}
                <video
                src={getVideoSrc(currentIndex === totalVideos - 1 ? 1 : currentIndex + 1)}
+               autoPlay// Automatically plays the video
+               loop// Ensures the video plays continuously
+               muted// Mutes the video
+               className="absolute left-0 top-0 size-full object-cover object-center"
                /> 
             </div>
         </div>
