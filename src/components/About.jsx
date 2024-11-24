@@ -1,4 +1,10 @@
+import gsap from "gsap"
+
 import { useGSAP } from "@gsap/react"
+
+import ScrollTrigger from "gsap/all"
+
+gsap.registerPlugin(ScrollTrigger)
 
 const About = () => {
   useGSAP(() => {
